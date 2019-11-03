@@ -6,6 +6,7 @@ class Configs:
     segmentation = True
     use_kaeru_model = True
     optim_metric = "avg_val_dice"
+    classify_optim_metric = "avg_val_acc"
     test_size = 0.2
     input_path = os.environ["SEVERSTAL_INPUT_PATH"]
     output_path = os.path.join(input_path, "output")
@@ -32,9 +33,11 @@ class Configs:
         fast_dev_run = True
     else:
         fast_dev_run = False
-    train_percet_check = 0.1
+    # train only 10% data.
+    # if you want to train all data, change from 0.1 to 1.0
+    train_percent_check = 0.1
 
 
 if __name__ == '__main__':
     config = Configs()
-    print(config)
+    print(config.debug)

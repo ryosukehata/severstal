@@ -50,7 +50,7 @@ class ClassifyModel(ptl.LightningModule):
             [x['val_accuracy'] for x in outputs]).mean()
         logs = {'avg_val_loss': avg_val_loss,
                 'avg_val_acc': avg_val_accuracy}
-        return {'optim_metric': logs[self.c.optim_metric],
+        return {'optim_metric': logs[self.c.classify_optim_metric],
                 'progress_bar': logs, 'log': logs}
 
     # choose optimizers and scheduler
@@ -58,7 +58,7 @@ class ClassifyModel(ptl.LightningModule):
         # optimizer=torch.optim.Adam(self.parameters(), lr=c.lr)
         optimizer = torch.optim.SGD(
             self.parameters(), lr=self.c.lr, momentum=0.9, weight_decay=0.0001)
-        shceduler = StepLR(optimizer, step_size=5, gamma=0.1)
+        scheduler = StepLR(optimizer, step_size=5, gamma=0.1)
         return [optimizer], [scheduler]
 
     # difine dataloader

@@ -24,16 +24,12 @@ from utils import fix_seed
 
 start = time.time()
 
-
-# config and fix seed, cuda config function
-
-
 config = Configs()
 fix_seed(config.SEED)
 
 
 if __name__ == "__main__":
-    df = pd.read_csv(os.path.join(config.input_path, "train.csv"))
+    df = dataframe_preprocess(os.path.join(config.input_path, "train.csv"))
 
     kf = KFold(n_splits=5, shuffle=True, random_state=config.SEED)
     for i, (train, test) in enumerate(kf.split(df)):
@@ -43,13 +39,16 @@ if __name__ == "__main__":
     df_train = df.iloc[train_loc]
     df_valid = df.iloc[test_loc]
 
-    train_dataset = ClassifyDataset(
+    train_dataset = SegmentationDataset(
         df_train, image_folder=os.path.join(config.input_path, "train_images"))
-    valid_dataset = ClassifyDataset(df_valid, image_folder=os.path.join(
+    valid_dataset = SegmentationDataset(df_valid, image_folder=os.path.join(
         config.input_path, "train_images"), train=False)
-    model = kaeru_classify_model(output_class=config.output_class)
+    if config.use_kaeru_model:
+        model = kaeru_classify_model(num_classes=config.output_class)
+    else:
+        pass
 
-    ptl_model = ClassifyModel(model, train_dataset, valid_dataset, c)
+    ptl_model = ClassifyModel(model, train_dataset, valid_dataset, config)
 
     ouput_dir_name = config.output_path
     state_dict_path = os.path.join(ouput_dir_name, "state_dict")
@@ -58,7 +57,6 @@ if __name__ == "__main__":
     logger = TestTubeLogger(
         save_dir=os.getcwd(),
         name=ouput_dir_name,
-        autosave=True,
         version=version,
         debug=config.debug,
         description=config.description,
@@ -71,16 +69,17 @@ if __name__ == "__main__":
         save_weights_only=False,
         monitor='optim_metric',
         mode='max',
-     )
+    )
 
     # slack = Slack()
     # worksheet = Sheet()
-
-   try:
-        trainer = Trainer(max_nb_epochs=config.num_epochs, 
+    #
+    try:
+        trainer = Trainer(max_nb_epochs=config.num_epochs,
                           gpus=[0],
-                          log_save_interval=1, 
+                          log_save_interval=1,
                           logger=logger,
+                          train_percent_check=config.train_percent_check,
                           fast_dev_run=config.fast_dev_run,
                           checkpoint_callback=checkpoint_callback)
 
