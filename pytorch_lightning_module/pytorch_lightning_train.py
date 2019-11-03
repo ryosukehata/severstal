@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import StepLR
-from metric import dice_channel_torch, dice_channel_torch_with_each_channel
+from metrics import dice_channel_torch, dice_channel_torch_with_each_channel
 from loss_functions import FocalLoss
 
 

@@ -32,6 +32,7 @@ class Configs:
         fast_dev_run = True
     else:
         fast_dev_run = False
+    train_percet_check = 0.1
 
 
 if __name__ == '__main__':

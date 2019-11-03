@@ -72,6 +72,7 @@ if __name__ == "__main__":
                           gpus=[0],
                           log_save_interval=1,
                           logger=logger,
+                          train_percent_check=config.train_percet_check
                           fast_dev_run=config.fast_dev_run,
                           checkpoint_callback=checkpoint_callback)
 
@@ -91,6 +92,7 @@ if __name__ == "__main__":
 #        slack.notify_success(config.description)
         print("training suceceded")
 
-    except:
+    except Exception as e:
+        print(e)
         print("training failed")
 #        slack.notify_failed(config.description)

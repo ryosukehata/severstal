@@ -92,6 +92,7 @@ if __name__ == "__main__":
 
 #        slack.notify_success(config.description)
 
-    except:
+    except Exception as e:
+        print(e)
         print("training failed")
 #        slack.notify_failed(config.description)
