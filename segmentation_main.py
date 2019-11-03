@@ -3,6 +3,7 @@ import glob
 import time
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.model_selection import KFold, train_test_split
 
 from pytorch_lightning import Trainer
@@ -35,8 +36,8 @@ if __name__ == "__main__":
                                           random_state=config.SEED)
 
     train_dataset = SegmentationDataset(
-        df_train, input_filepath=os.path.join(config.input_path, "train_images"))
-    valid_dataset = SegmentationDataset(df_valid, input_filepath=os.path.join(
+        df_train, image_folder=os.path.join(config.input_path, "train_images"))
+    valid_dataset = SegmentationDataset(df_valid, image_folder=os.path.join(
                                         config.input_path, "train_images"), train=False)
 
     model = create_segmentation_models(config.encoder, config.arch)
@@ -50,7 +51,6 @@ if __name__ == "__main__":
     logger = TestTubeLogger(
         save_dir=os.getcwd(),
         name=ouput_dir_name,
-        autosave=True,
         version=version,
         debug=config.debug,
         description=config.description,
@@ -61,8 +61,8 @@ if __name__ == "__main__":
         save_best_only=True,
         verbose=True,
         save_weights_only=False,
-        monitor='avg_val_loss',
-        mode='min',
+        monitor='optim_metric',
+        mode='max',
     )
 
 #    slack = Slack()
@@ -72,6 +72,7 @@ if __name__ == "__main__":
                           gpus=[0],
                           log_save_interval=1,
                           logger=logger,
+                          fast_dev_run=config.fast_dev_run,
                           checkpoint_callback=checkpoint_callback)
 
         trainer.fit(ptl_model)

@@ -48,7 +48,7 @@ def get_to_tensor_list():
 
 
 class SegmentationDataset(Dataset):
-    def __init__(self, df, image_foloder, train=True):
+    def __init__(self, df, image_folder, train=True):
         """
         input 
         df           : After preprocessing dataframe which contains 
@@ -91,9 +91,9 @@ class SegmentationDataset(Dataset):
 
 
 class SegmentationDatasetOnly3(Dataset):
-    def __init__(self, df, input_filepath, train=True):
+    def __init__(self, df, image_folder, train=True):
         self.df = df
-        self.image_folder = input_filepath
+        self.image_folder = image_folder
         self.augmentation = get_augmentation_list()
         self.totensor_list = get_to_tensor_list()
         self.train = train

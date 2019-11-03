@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import StepLR
-from metrics.metric import dice_channel_torch, dice_channel_torch_with_each_channel
-from loss_functions.loss_functions import FocalLoss
+from metric import dice_channel_torch, dice_channel_torch_with_each_channel
+from loss_functions import FocalLoss
 
 
 class ClassifyModel(ptl.LightningModule):
@@ -106,7 +106,7 @@ class SegmentationModel(ptl.LightningModule):
         return x
 
     def _metric(self, preds, masks):
-        return dice_channel_torch_with_each(preds, masks)
+        return dice_channel_torch_with_each_channel(preds, masks)
 
     def training_step(self, batch, batch_nb):
         img, mask, label = batch
