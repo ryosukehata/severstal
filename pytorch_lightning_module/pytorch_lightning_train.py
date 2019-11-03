@@ -33,7 +33,9 @@ class ClassifyModel(ptl.LightningModule):
         img, mask, label = batch
         pred = self.forward(img)
         label = label.float()
-        return {'loss': self.criterion(pred, label)}
+        train_loss = self.criterion(pred, label)
+        logs = {'train_loss': train_loss}
+        return {'loss': train_loss, 'progress_bar': logs, 'log': logs}
 
     def validation_step(self, batch, batch_nb):
         img, mask, label = batch
@@ -44,13 +46,18 @@ class ClassifyModel(ptl.LightningModule):
 
     def validation_end(self, outputs):
         avg_val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        avg_val_accuracy = torch.stack([x['val_accuracy'] for x in outputs]).mean()
-        return {'avg_val_loss': avg_val_loss, 'avg_val_acc': avg_val_accuracy}
+        avg_val_accuracy = torch.stack(
+            [x['val_accuracy'] for x in outputs]).mean()
+        logs = {'avg_val_loss': avg_val_loss,
+                'avg_val_acc': avg_val_accuracy}
+        return {'optim_metric': logs[self.c.optim_metric],
+                'progress_bar': logs, 'log': logs}
 
     # choose optimizers and scheduler
     def configure_optimizers(self):
         # optimizer=torch.optim.Adam(self.parameters(), lr=c.lr)
-        optimizer = torch.optim.SGD(self.parameters(), lr=self.c.lr, momentum=0.9, weight_decay=0.0001)
+        optimizer = torch.optim.SGD(
+            self.parameters(), lr=self.c.lr, momentum=0.9, weight_decay=0.0001)
         shceduler = StepLR(optimizer, step_size=5, gamma=0.1)
         return [optimizer], [scheduler]
 
@@ -104,8 +111,9 @@ class SegmentationModel(ptl.LightningModule):
     def training_step(self, batch, batch_nb):
         img, mask, label = batch
         pred = self.forward(img)
-        label = label.float()
-        return {'loss': self.criterion(pred, mask)}
+        train_loss = self.criterion(pred, mask)
+        logs = {'train_loss': train_loss}
+        return {'loss': train_loss, 'progress_bar': logs, 'log': logs}
 
     def validation_step(self, batch, batch_nb):
         img, mask, label = batch
@@ -124,16 +132,18 @@ class SegmentationModel(ptl.LightningModule):
         dice_2 = torch.stack([x['dice_2'] for x in outputs]).mean()
         dice_3 = torch.stack([x['dice_3'] for x in outputs]).mean()
         dice_4 = torch.stack([x['dice_4'] for x in outputs]).mean()
-
-        return {'avg_val_loss': avg_val_loss, 'avg_val_dice': avg_val_dice,
+        logs = {'avg_val_loss': avg_val_loss, 'avg_val_dice': avg_val_dice,
                 'dice_1': dice_1, 'dice_2': dice_2, 'dice_3': dice_3, 'dice_4': dice_4}
+        return {'optim_metric': logs[self.c.optim_metric],
+                'progress_bar': logs, 'log': logs}
 
     # choose optimizers and scheduler
     def configure_optimizers(self):
         if self.c.encoder == "deeplabv3":
             train_params = [{'params': self.model.get_1x_lr_params(), 'lr': self.c.lr},
                             {'params': self.model.get_10x_lr_params(), 'lr': self.c.lr * 10}]
-            optimizer = torch.optim.SGD(train_params,  momentum=0.9, weight_decay=5e-4)
+            optimizer = torch.optim.SGD(
+                train_params,  momentum=0.9, weight_decay=5e-4)
 
         else:
             optimizer = torch.optim.Adam(self.parameters(), lr=self.c.lr)

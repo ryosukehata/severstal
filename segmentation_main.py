@@ -7,7 +7,7 @@ from sklearn.model_selection import KFold, train_test_split
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
-from test_tube import Experiment
+from pytorch_lightning.logging import TestTubeLogger
 import sys
 
 from preprocess import dataframe_preprocess
@@ -16,11 +16,10 @@ from pytorch_lightning_module import SegmentationModel
 from models import create_segmentation_models
 from configs import Configs
 from utils import fix_seed
-from lib.slack import Slack
-from lib.sheet import Sheet
-print(SegmentationDataset)
-print(SegmentationModel)
 
+# sys.path.append(os.environ.get("TOGURO_LIB_PATH"))
+# from slack import Slack
+# from sheet import Sheet
 
 start = time.time()
 
@@ -30,11 +29,16 @@ fix_seed(config.SEED)
 
 if __name__ == "__main__":
     df = dataframe_preprocess(os.path.join(config.input_path, "train.csv"))
-    df_train, df_valid = train_test_split(df, test_size=0.1, stratify=df["defects"], random_state=config.SEED)
+    df_train, df_valid = train_test_split(df,
+                                          test_size=config.test_size,
+                                          stratify=df["defects"],
+                                          random_state=config.SEED)
 
-    train_dataset = SegmentationDataset(df_train, input_filepath=os.path.join(config.input_path, "train_images"))
+    train_dataset = SegmentationDataset(
+        df_train, input_filepath=os.path.join(config.input_path, "train_images"))
     valid_dataset = SegmentationDataset(df_valid, input_filepath=os.path.join(
                                         config.input_path, "train_images"), train=False)
+
     model = create_segmentation_models(config.encoder, config.arch)
 
     ptl_model = SegmentationModel(model, train_dataset, valid_dataset, config)
@@ -43,12 +47,13 @@ if __name__ == "__main__":
     state_dict_path = os.path.join(ouput_dir_name, "state_dict")
     version = 0
 
-    exp = Experiment(
-        name=ouput_dir_name,
+    logger = TestTubeLogger(
         save_dir=os.getcwd(),
+        name=ouput_dir_name,
         autosave=True,
         version=version,
-        description='test',
+        debug=config.debug,
+        description=config.description,
     )
 
     checkpoint_callback = ModelCheckpoint(
@@ -60,11 +65,13 @@ if __name__ == "__main__":
         mode='min',
     )
 
-    slack = Slack()
-    worksheet = Sheet()
+#    slack = Slack()
+#    worksheet = Sheet()
     try:
-        trainer = Trainer(max_nb_epochs=config.num_epochs, gpus=[0],
-                          log_save_interval=1, experiment=exp,
+        trainer = Trainer(max_nb_epochs=config.num_epochs,
+                          gpus=[0],
+                          log_save_interval=1,
+                          logger=logger,
                           checkpoint_callback=checkpoint_callback)
 
         trainer.fit(ptl_model)
@@ -73,14 +80,16 @@ if __name__ == "__main__":
         output_data = torch.load(ckpt_path)
         total_time = time.time() - start
 
-        worksheet.post_severstal(config.encoder_name,
-                                 'only channel3 {}'.format(output_data['checkpoint_callback_best']),
-                                 config.description,
-                                 {'batch_size': config.batch_size, 'num_epochs': config.num_epochs,
-                                  'total_time': total_time, 'best_epoch': output_data['epoch']},
-                                 'hata')
+#        worksheet.post_severstal(config.encoder_name,
+#                                 output_data['checkpoint_callback_best'],
+#                                 config.description,
+#                                 {'batch_size': config.batch_size, 'num_epochs': config.num_epochs,
+#                                  'total_time': total_time, 'best_epoch': output_data['epoch']},
+#                                 'hata')
 
-        slack.notify_success(config.description)
+#        slack.notify_success(config.description)
+        print("training suceceded")
 
     except:
-        slack.notify_failed(config.description)
+        print("training failed")
+#        slack.notify_failed(config.description)
