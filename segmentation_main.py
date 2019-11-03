@@ -72,7 +72,7 @@ if __name__ == "__main__":
                           gpus=[0],
                           log_save_interval=1,
                           logger=logger,
-                          train_percent_check=config.train_percet_check
+                          train_percent_check=config.train_percet_check,
                           fast_dev_run=config.fast_dev_run,
                           checkpoint_callback=checkpoint_callback)
 
